@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  espace-marrakesh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: espace-marrakesh
+    ports:
+      - "3002:3001"
+    restart: unless-stopped
