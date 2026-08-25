@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusinessStore } from "@/hooks/useBusinessStore";
-import { BusinessCategory, PackageType } from "@/types";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { BusinessCategory, PackageType, PaymentMethod } from "@/types";
 import {
   CheckCircle, Zap, Crown, ArrowLeft, Store, ChevronDown,
+  Banknote, CreditCard, Building2,
 } from "lucide-react";
 import clsx from "clsx";
 
-type Step = "plan" | "account" | "details" | "done";
+type Step = "plan" | "account" | "details" | "payment" | "done";
 
 const categoryOptions: BusinessCategory[] = [
   "restaurant", "cafe", "boulangerie", "pharmacie", "coiffeur", "epicerie",
@@ -111,10 +113,12 @@ export default function BusinessRegisterPage() {
   const { t, isArabic, L, lang } = useLang();
   const { user, register } = useAuth();
   const { addBusiness } = useBusinessStore();
+  const { settings } = useAppSettings();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("plan");
   const [selectedPlan, setSelectedPlan] = useState<PackageType>("free");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [error, setError] = useState("");
 
   const [account, setAccount] = useState({
@@ -191,6 +195,36 @@ export default function BusinessRegisterPage() {
       return;
     }
 
+    if (selectedPlan === "free") {
+      const newBusiness = {
+        id: `biz-${Date.now()}`,
+        nameFr: form.nameFr.trim(),
+        nameAr: form.nameAr.trim() || form.nameFr.trim(),
+        descriptionFr: form.descriptionFr.trim() || "",
+        descriptionAr: form.descriptionAr.trim() || "",
+        category: form.category,
+        address: form.address.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        website: form.website.trim(),
+        whatsapp: form.whatsapp.trim(),
+        lat: 34.0331,
+        lng: -5.5473,
+        rating: 0,
+        reviewCount: 0,
+        isSponsored: false,
+        packageType: selectedPlan as PackageType,
+        createdAt: new Date().toISOString().split("T")[0],
+        userId: user?.id,
+      };
+      addBusiness(newBusiness as any);
+      setStep("done");
+    } else {
+      setStep("payment");
+    }
+  }
+
+  function handlePaymentSubmit() {
     const newBusiness = {
       id: `biz-${Date.now()}`,
       nameFr: form.nameFr.trim(),
@@ -208,11 +242,11 @@ export default function BusinessRegisterPage() {
       rating: 0,
       reviewCount: 0,
       isSponsored: selectedPlan === "premium",
-      packageType: selectedPlan,
+      packageType: selectedPlan as PackageType,
+      paymentMethod,
       createdAt: new Date().toISOString().split("T")[0],
       userId: user?.id,
     };
-
     addBusiness(newBusiness as any);
     setStep("done");
   }
@@ -224,7 +258,7 @@ export default function BusinessRegisterPage() {
         <div className="max-w-3xl mx-auto text-center">
           {step !== "plan" && step !== "done" && (
             <button
-              onClick={() => setStep(step === "account" ? "plan" : "account")}
+              onClick={() => setStep(step === "account" ? "plan" : step === "payment" ? "details" : "account")}
               className="inline-flex items-center gap-1 text-sm text-emerald-200 hover:text-white mb-4 transition-colors"
             >
               <ArrowLeft size={16} /> { L("Retour","رجوع") }
@@ -575,6 +609,136 @@ export default function BusinessRegisterPage() {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* Step: Payment */}
+        {step === "payment" && (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-navy-800 text-center mb-2">{t.selectPaymentMethod}</h2>
+            <p className="text-navy-500 text-center mb-8">{t.paymentMethodSubtitle}</p>
+
+            {/* Plan summary */}
+            <div className="bg-white rounded-2xl border border-emerald-100 p-5 mb-6">
+              <div className="flex items-center gap-3">
+                <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center", plan.iconBg)}>
+                  <plan.icon size={24} />
+                </div>
+                <div>
+                  <p className="text-xs text-navy-400">{t.chosenPlan}</p>
+                  <p className="font-bold text-navy-800">
+                    {lang === "ar" ? plan.label.ar : plan.label.fr}
+                    <span className="text-primary-600 ml-2">{plan.price} DH{t.perMonth}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment options */}
+            <div className="space-y-4 mb-6">
+              {/* Cash */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("cash")}
+                className={clsx(
+                  "w-full rounded-xl border-2 p-4 flex items-center gap-4 transition-all text-left",
+                  paymentMethod === "cash"
+                    ? "border-primary-500 bg-primary-50"
+                    : "border-gray-200 hover:border-primary-300"
+                )}
+              >
+                <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", paymentMethod === "cash" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-400")}>
+                  <Banknote size={22} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-navy-800">{t.cashPayment}</p>
+                  <p className="text-sm text-navy-500">{t.cashPaymentDesc}</p>
+                </div>
+                <div className={clsx("w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0", paymentMethod === "cash" ? "border-primary-500" : "border-gray-300")}>
+                  {paymentMethod === "cash" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                </div>
+              </button>
+
+              {/* Credit Card */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("credit_card")}
+                className={clsx(
+                  "w-full rounded-xl border-2 p-4 flex items-center gap-4 transition-all text-left",
+                  paymentMethod === "credit_card"
+                    ? "border-primary-500 bg-primary-50"
+                    : "border-gray-200 hover:border-primary-300"
+                )}
+              >
+                <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", paymentMethod === "credit_card" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-400")}>
+                  <CreditCard size={22} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-navy-800">{t.creditCardPayment}</p>
+                </div>
+                <div className={clsx("w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0", paymentMethod === "credit_card" ? "border-primary-500" : "border-gray-300")}>
+                  {paymentMethod === "credit_card" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                </div>
+              </button>
+
+              {paymentMethod === "credit_card" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+                  {t.creditCardNotAvailable}
+                </div>
+              )}
+
+              {/* Bank Transfer */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("bank_transfer")}
+                className={clsx(
+                  "w-full rounded-xl border-2 p-4 flex items-center gap-4 transition-all text-left",
+                  paymentMethod === "bank_transfer"
+                    ? "border-primary-500 bg-primary-50"
+                    : "border-gray-200 hover:border-primary-300"
+                )}
+              >
+                <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", paymentMethod === "bank_transfer" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-400")}>
+                  <Building2 size={22} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-navy-800">{t.bankTransfer}</p>
+                  <p className="text-sm text-navy-500">{t.bankTransferDesc}</p>
+                </div>
+                <div className={clsx("w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0", paymentMethod === "bank_transfer" ? "border-primary-500" : "border-gray-300")}>
+                  {paymentMethod === "bank_transfer" && <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
+                </div>
+              </button>
+
+              {paymentMethod === "bank_transfer" && settings.bankName && (
+                <div className="bg-emerald-50 rounded-xl p-4 space-y-2 text-sm">
+                  <p className="font-bold text-navy-800 mb-3">{t.bankDetailsTitle}</p>
+                  <div className="flex justify-between"><span className="text-navy-500">{t.bankNameLabel}</span><span className="text-navy-800 font-medium">{settings.bankName}</span></div>
+                  <div className="flex justify-between"><span className="text-navy-500">{t.accountHolderLabel}</span><span className="text-navy-800 font-medium">{settings.bankAccountHolder}</span></div>
+                  <div className="flex justify-between"><span className="text-navy-500">{t.ibanLabel}</span><span className="text-navy-800 font-medium">{settings.bankIban}</span></div>
+                  <div className="flex justify-between"><span className="text-navy-500">{t.ribLabel}</span><span className="text-navy-800 font-medium">{settings.bankRib}</span></div>
+                </div>
+              )}
+
+              {paymentMethod === "bank_transfer" && !settings.bankName && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+                  {t.bankDetailsNotConfigured}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handlePaymentSubmit}
+              disabled={paymentMethod === "credit_card"}
+              className={clsx(
+                "w-full py-3 rounded-lg font-medium transition-colors text-lg",
+                paymentMethod === "credit_card"
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-primary-600 text-white hover:bg-primary-700"
+              )}
+            >
+              { L("Confirmer et publier","تأكيد النشر") }
+            </button>
           </div>
         )}
 

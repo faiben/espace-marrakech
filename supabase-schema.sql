@@ -140,8 +140,12 @@ create table if not exists business_claims (
 create table if not exists app_settings (
   id text primary key default 'main',
   whatsapp_number text default '+212600000000',
-  support_email text default 'admin@espace-marrakesh.ma',
-  ads_enabled boolean default true
+  support_email text default 'support@espacemarrakesh.ma',
+  ads_enabled boolean default true,
+  bank_name text default '',
+  bank_account_holder text default '',
+  bank_iban text default '',
+  bank_rib text default ''
 );
 
 insert into app_settings (id) values ('main') on conflict (id) do nothing;

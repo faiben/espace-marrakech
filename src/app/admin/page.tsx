@@ -828,6 +828,47 @@ export default function AdminPage() {
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.adsEnabled ? "left-6" : "left-0.5"}`} />
                   </button>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">{t.bankNameLabel}</label>
+                  <input
+                    type="text"
+                    value={settings.bankName}
+                    onChange={(e) => updateSettings({ bankName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder={ L("Ex: Attijariwafa Bank","مثال: بنكotiجة وفا بنك") }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">{t.accountHolderLabel}</label>
+                  <input
+                    type="text"
+                    value={settings.bankAccountHolder}
+                    onChange={(e) => updateSettings({ bankAccountHolder: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-navy-700 mb-1">{t.ibanLabel}</label>
+                    <input
+                      type="text"
+                      value={settings.bankIban}
+                      onChange={(e) => updateSettings({ bankIban: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="MA..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-navy-700 mb-1">{t.ribLabel}</label>
+                    <input
+                      type="text"
+                      value={settings.bankRib}
+                      onChange={(e) => updateSettings({ bankRib: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white text-navy-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-navy-400">{t.bankTransferInfo}</p>
                 <button
                   onClick={() => { setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 2000); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
-import { Ad } from "@/types";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { Ad, PaymentMethod } from "@/types";
 import { X } from "lucide-react";
 
 interface AdFormProps {
@@ -12,7 +13,8 @@ interface AdFormProps {
 }
 
 export function AdForm({ ad, onSave, onClose }: AdFormProps) {
-  const { isArabic, L } = useLang();
+  const { isArabic, L, t } = useLang();
+  const { settings } = useAppSettings();
   const [titleFr, setTitleFr] = useState(ad?.titleFr ?? "");
   const [titleAr, setTitleAr] = useState(ad?.titleAr ?? "");
   const [imageUrl, setImageUrl] = useState(ad?.imageUrl ?? "");
@@ -20,6 +22,7 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
   const [advertiserName, setAdvertiserName] = useState(ad?.advertiserName ?? "");
   const [advertiserEmail, setAdvertiserEmail] = useState(ad?.advertiserEmail ?? "");
   const [position, setPosition] = useState<"banner" | "sidebar" | "inline">(ad?.position ?? "banner");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(ad?.paymentMethod ?? "cash");
   const [startsAt, setStartsAt] = useState(ad?.startsAt ?? new Date().toISOString().split("T")[0]);
   const [expiresAt, setExpiresAt] = useState(ad?.expiresAt ?? "");
   const [status, setStatus] = useState<"pending" | "approved" | "rejected" | "expired">(ad?.status ?? "pending");
@@ -36,6 +39,7 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
       advertiserEmail,
       status,
       position,
+      paymentMethod,
       startsAt,
       expiresAt,
       impressions: ad?.impressions ?? 0,
@@ -99,6 +103,23 @@ export function AdForm({ ad, onSave, onClose }: AdFormProps) {
               </select>
             </div>
           </div>
+          <div>
+            <label className="block text-xs font-medium text-navy-700 mb-1">{ L("Mode de paiement","طريقة الدفع") }</label>
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="w-full px-3 py-2 rounded-lg border border-emerald-200 text-sm bg-white">
+              <option value="cash">{t.cashPayment}</option>
+              <option value="credit_card" disabled>{t.creditCardPayment} — { L("Bientôt disponible","قريباً") }</option>
+              <option value="bank_transfer">{t.bankTransfer}</option>
+            </select>
+          </div>
+          {paymentMethod === "bank_transfer" && settings.bankName && (
+            <div className="bg-emerald-50 rounded-xl p-3 text-xs space-y-1">
+              <p className="font-bold text-navy-800 mb-2">{t.bankDetailsTitle}</p>
+              <div className="flex justify-between"><span className="text-navy-500">{t.bankNameLabel}</span><span className="text-navy-700">{settings.bankName}</span></div>
+              <div className="flex justify-between"><span className="text-navy-500">{t.accountHolderLabel}</span><span className="text-navy-700">{settings.bankAccountHolder}</span></div>
+              <div className="flex justify-between"><span className="text-navy-500">{t.ibanLabel}</span><span className="text-navy-700">{settings.bankIban}</span></div>
+              <div className="flex justify-between"><span className="text-navy-500">{t.ribLabel}</span><span className="text-navy-700">{settings.bankRib}</span></div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-navy-700 mb-1">{ L("Date de début","تاريخ البداية") }</label>
