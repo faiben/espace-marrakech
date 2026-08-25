@@ -87,7 +87,7 @@ interface ArtisanCsvImportProps {
 }
 
 export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps) {
-  const { t, isArabic, L, lang } = useLang();
+  const { t, lang } = useLang();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
   const [headers, setHeaders] = useState<string[]>([]);
@@ -126,9 +126,9 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
     headers.forEach((h, i) => { raw[h] = values[i] || ""; });
 
     const errors: string[] = [];
-    if (!nameFr && !nameAr) errors.push(L("Nom manquant","الاسم مفقود"));
-    if (!phone) errors.push(L("Téléphone manquant","الهاتف مفقود"));
-    if (!addressFr && !addressAr) errors.push(L("Adresse manquante","العنوان مفقود"));
+    if (!nameFr && !nameAr) errors.push(t.nomManquant);
+    if (!phone) errors.push(t.telephoneManquant);
+    if (!addressFr && !addressAr) errors.push(t.adresseManquante);
 
     return { nameFr, nameAr, specialty, descriptionFr: descriptionFr || nameFr, descriptionAr: descriptionAr || nameAr, phone, email, addressFr: addressFr || addressAr, addressAr: addressAr || addressFr, lat, lng, jobsCompleted, rating, raw, errors };
   };
@@ -190,7 +190,7 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
         <div className="sticky top-0 bg-white border-b border-emerald-100 px-6 py-4 flex items-center justify-between z-10">
           <h3 className="font-bold text-navy-800 text-lg flex items-center gap-2">
             <FileText size={20} className="text-primary-500" />
-            { L("Importer des artisans CSV","استيراد حرفيين CSV") }
+            { t.importArtisansCsv }
           </h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-navy-400 hover:bg-navy-50">
             <X size={20} />
@@ -206,17 +206,17 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
               >
                 <Upload size={48} className="mx-auto text-primary-400 mb-4" />
                 <p className="text-navy-700 font-medium mb-2">
-                  { L("Glissez un fichier CSV ici ou cliquez pour parcourir","اسحب ملف CSV هنا أو انقر للتحميل") }
+                  { t.dropCsvHere }
                 </p>
                 <p className="text-sm text-navy-400">
-                  { L("Max 10 Mo","الحد الأقصى 10 ميغا بايت") }
+                  { t.maxFileSize }
                 </p>
               </div>
               <input ref={fileRef} type="file" accept=".csv,.tsv,.txt" onChange={handleFile} className="hidden" />
 
               <div className="mt-8 text-left max-w-lg mx-auto">
                 <h4 className="font-semibold text-navy-700 mb-2 text-sm">
-                  { L("Colonnes CSV supportées:","أعمدة CSV المدعومة:") }
+                  { t.csvColumnsSupported }
                 </h4>
                 <div className="grid grid-cols-2 gap-1 text-xs text-navy-500">
                   {[
@@ -242,8 +242,8 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
                 </button>
                 <div>
                   <p className="font-semibold text-navy-800">
-                    {rows.length} { L("lignes","صف") } — <span className="text-green-600">{validRows.length} { L("valides","صالحة") }</span>
-                    {errorRows.length > 0 && <> · <span className="text-red-500">{errorRows.length} { L("erreurs","أخطاء") }</span></>}
+                    {rows.length} {t.lignes} — <span className="text-green-600">{validRows.length} {t.valides}</span>
+                    {errorRows.length > 0 && <> · <span className="text-red-500">{errorRows.length} {t.erreurs}</span></>}
                   </p>
                 </div>
               </div>
@@ -253,10 +253,10 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
                   <thead>
                     <tr className="border-b border-emerald-100">
                       <th className="text-left py-2 px-2 text-navy-500 font-medium">#</th>
-                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{ L("Nom","الاسم") }</th>
-                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{ L("Spécialité","التخصص") }</th>
-                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{ L("Téléphone","الهاتف") }</th>
-                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{ L("Statut","الحالة") }</th>
+                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{t.nomCol}</th>
+                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{t.specialiteCol}</th>
+                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{t.telephoneCol}</th>
+                      <th className="text-left py-2 px-2 text-navy-500 font-medium">{t.statutCol}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,15 +282,15 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
               {errorRows.length > 0 && (
                 <div className="bg-red-50 rounded-xl p-3 mb-4">
                   <p className="text-sm font-medium text-red-700 flex items-center gap-1 mb-1">
-                    <AlertCircle size={14} /> { L("Erreurs:","أخطاء:") }
+                    <AlertCircle size={14} /> {t.erreursLabel}
                   </p>
                   {errorRows.slice(0, 5).map((r, i) => (
                     <p key={i} className="text-xs text-red-600 ml-5">
-                      Ligne {rows.indexOf(r) + 1}: {r.errors.join(", ")}
+                      {t.ligne} {rows.indexOf(r) + 1}: {r.errors.join(", ")}
                     </p>
                   ))}
                   {errorRows.length > 5 && (
-                    <p className="text-xs text-red-500 ml-5">+ {errorRows.length - 5} autres...</p>
+                    <p className="text-xs text-red-500 ml-5">+ {errorRows.length - 5} {t.autres}...</p>
                   )}
                 </div>
               )}
@@ -301,10 +301,10 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
             <div className="text-center py-10">
               <CheckCircle size={56} className="mx-auto text-green-500 mb-4" />
               <h4 className="text-lg font-bold text-navy-800 mb-2">
-                { L("Import terminé!","تم الاستيراد بنجاح!") }
+                { t.importTermine }
               </h4>
               <p className="text-navy-500">
-                {imported} { L("artisans importés","حرفي مستورد") }
+                {imported} { t.artisansImportes }
               </p>
             </div>
           )}
@@ -316,7 +316,7 @@ export function ArtisanCsvImport({ onClose, addArtisan }: ArtisanCsvImportProps)
           </button>
           {step === "preview" && validRows.length > 0 && (
             <button onClick={handleImport} className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
-              { L(`Importer ${validRows.length} artisans`,`استيراد ${validRows.length} حرفي`) }
+              { `${t.importCsv} ${validRows.length} ${t.lignes}` }
             </button>
           )}
           {step === "done" && (
