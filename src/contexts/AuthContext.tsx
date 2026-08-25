@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { User, UserRole } from "@/types";
 import { supabase } from "@/lib/supabase";
 
@@ -20,6 +21,46 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function toAppUser(profile: Record<string, unknown>): User {
+  return {
+    id: profile.id as string,
+    name: profile.name as string,
+    email: profile.email as string,
+    role: profile.role as UserRole,
+    favorites: (profile.favorites as string[]) || [],
+    createdAt: profile.created_at as string,
+  };
+}
+
+async function ensureProfile(authUser: SupabaseUser): Promise<User | null> {
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
+  if (profile) return toAppUser(profile);
+
+  const meta = (authUser.user_metadata || {}) as Record<string, unknown>;
+  const name =
+    (meta.full_name as string) ||
+    (meta.name as string) ||
+    (authUser.email ? authUser.email.split("@")[0] : "Utilisateur");
+  const { data: created, error } = await supabase
+    .from("user_profiles")
+    .upsert({
+      id: authUser.id,
+      name,
+      email: authUser.email || "",
+      role: "resident",
+      favorites: [],
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  if (error || !created) return null;
+  return toAppUser(created);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -29,42 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        if (profile) {
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role,
-            favorites: profile.favorites || [],
-            createdAt: profile.created_at,
-          });
-        }
+        const appUser = await ensureProfile(session.user);
+        if (appUser) setUser(appUser);
       }
       setLoading(false);
     })();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        if (profile) {
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role,
-            favorites: profile.favorites || [],
-            createdAt: profile.created_at,
-          });
-        }
+        const appUser = await ensureProfile(session.user);
+        if (appUser) setUser(appUser);
       } else {
         setUser(null);
       }
@@ -77,39 +92,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { ok: false, error: error.message.includes("Invalid") ? "Email ou mot de passe incorrect" : error.message };
 
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("id", data.user.id)
-      .single();
-    if (profile) {
-      setUser({
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        role: profile.role,
-        favorites: profile.favorites || [],
-        createdAt: profile.created_at,
-      });
-    }
+    const appUser = await ensureProfile(data.user);
+    if (appUser) setUser(appUser);
     return { ok: true };
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<{ ok: boolean; error?: string }> => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    });
     if (error) return { ok: false, error: error.message.includes("already") ? "Cet email est déjà utilisé" : error.message };
     if (!data.user) return { ok: false, error: "Erreur lors de l'inscription" };
 
-    await supabase.from("user_profiles").upsert({
-      id: data.user.id,
-      name,
-      email,
-      role,
-      favorites: [],
-      created_at: new Date().toISOString(),
-    });
-
-    setUser({ id: data.user.id, name, email, role, favorites: [], createdAt: new Date().toISOString() });
+    const appUser = await ensureProfile(data.user);
+    if (!appUser) {
+      return { ok: false, error: "Compte créé mais profil impossible à enregistrer. Réessayez de vous connecter." };
+    }
+    await supabase
+      .from("user_profiles")
+      .update({ name, role })
+      .eq("id", data.user.id);
+    setUser({ ...appUser, name, role, favorites: [] });
     return { ok: true };
   }, []);
 
