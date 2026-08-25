@@ -96,9 +96,10 @@ function ArtisansContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-navy-800 mb-2">{t.artisansTitle}</h1>
-        <p className="text-navy-600">{filtered.length} {t.results}</p>
+      <div className="mb-8 p-8 rounded-3xl bg-gradient-to-br from-primary-600 via-primary-700 to-navy-800 text-white card-shadow">
+        <h1 className="text-3xl sm:text-4xl font-extrabold mb-3">{t.artisansHeadline}</h1>
+        <p className="text-primary-50 max-w-2xl leading-relaxed mb-3">{t.artisansSubheadline}</p>
+        <p className="text-sm text-primary-100">{filtered.length} {t.results}</p>
       </div>
 
       {/* How it works */}

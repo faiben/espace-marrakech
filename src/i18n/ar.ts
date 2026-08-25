@@ -166,6 +166,8 @@ export const ar = {
   takeMeThere: "إلى هناك",
   whatsapp: "واتساب",
   artisansTitle: "خدمات الحرفيين",
+  artisansHeadline: "اكتشف حرفيي مراكش الخفيّين",
+  artisansSubheadline: "من صنّاع الجلد في المدينة العتيقة إلى أساتذة الزليج في القصبة — تواصل مع حرفيين موثّقين يحافظون على تقاليد مدينتنا.",
   requestArtisan: "طلب حرفي",
   howItWorksTitle: "كيف يعمل",
   step1: "صف احتياجك",

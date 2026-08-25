@@ -169,6 +169,8 @@ export const fr = {
   whatsapp: "WhatsApp",
   // Artisans
   artisansTitle: "Services d'artisans",
+  artisansHeadline: "Trouvez les artisans cachés de Marrakech",
+  artisansSubheadline: "Des travailleurs du cuir de la Médina aux maîtres du zellige de la Kasbah — connectez-vous avec des artisans vérifiés qui font vivre les traditions de notre ville.",
   requestArtisan: "Demander un artisan",
   howItWorksTitle: "Comment ça fonctionne",
   step1: "Décrivez votre besoin",
