@@ -176,3 +176,17 @@ create policy "Allow all on artisan_requests" on artisan_requests for all using 
 create policy "Allow all on business_claims" on business_claims for all using (true) with check (true);
 create policy "Allow all on app_settings" on app_settings for all using (true) with check (true);
 create policy "Allow all on user_profiles" on user_profiles for all using (true) with check (true);
+
+-- Contact messages (contact form)
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  email text NOT NULL,
+  category text,
+  subject text,
+  message text NOT NULL,
+  status text DEFAULT 'unread',
+  created_at text DEFAULT now()::text
+);
+ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON public.contact_messages FOR ALL USING (true) WITH CHECK (true);

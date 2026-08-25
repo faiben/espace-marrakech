@@ -4,17 +4,20 @@ import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useArtisanStore } from "@/hooks/useArtisanStore";
+import { useArtisanRequestStore } from "@/hooks/useArtisanRequestStore";
 import { searchArtisans, sortByDistance } from "@/utils/search";
 import { ArtisanCard } from "@/components/ArtisanCard";
 import { SearchBar } from "@/components/SearchBar";
 import { Shield, Users, Phone as PhoneIcon, CheckCircle, Navigation, X, SlidersHorizontal, MessageCircle } from "lucide-react";
 import clsx from "clsx";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { ArtisanRequest } from "@/types";
 
 function ArtisansContent() {
   const { t, isArabic, L, lang } = useLang();
   const { settings } = useAppSettings();
   const { allArtisans } = useArtisanStore();
+  const { addRequest } = useArtisanRequestStore();
   const [query, setQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [nearMe, setNearMe] = useState(false);
@@ -22,7 +25,7 @@ function ArtisansContent() {
   const [radius, setRadius] = useState(10);
   const [locating, setLocating] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
-  const [requestForm, setRequestForm] = useState({ description: "", specialty: "", phone: "", name: "" });
+  const [requestForm, setRequestForm] = useState({ description: "", specialty: "", phone: "", name: "", email: "" });
   const [requestSent, setRequestSent] = useState(false);
 
   const handleNearMe = () => {
@@ -59,10 +62,36 @@ function ArtisansContent() {
     return results;
   }, [query, selectedSpecialty, nearMe, userLocation, radius, allArtisans]);
 
-  const handleRequest = (e: React.FormEvent) => {
+  const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    setRequestSent(true);
-    setTimeout(() => { setRequestSent(false); setShowRequest(false); }, 3000);
+    try {
+      await addRequest({
+        id: `ar${Date.now()}`,
+        artisanId: "",
+        artisanName: L("Demande générale","طلب عام"),
+        userName: requestForm.name,
+        userPhone: requestForm.phone,
+        userEmail: requestForm.email,
+        descriptionFr: requestForm.description,
+        descriptionAr: requestForm.description,
+        specialty: requestForm.specialty as ArtisanRequest["specialty"],
+        status: "pending",
+        contactedArtisans: [],
+        createdAt: new Date().toISOString(),
+      });
+      const message = encodeURIComponent(
+        isArabic
+          ? `طلب حرفي جديد من ${requestForm.name} (${requestForm.phone}):\nالتخصص: ${requestForm.specialty}\n${requestForm.description}`
+          : `Nouvelle demande d'artisan de ${requestForm.name} (${requestForm.phone}) :\nSpécialité : ${requestForm.specialty}\n${requestForm.description}`
+      );
+      window.open(`https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}?text=${message}`, "_blank");
+      setRequestSent(true);
+      setRequestForm({ description: "", specialty: "", phone: "", name: "", email: "" });
+      setTimeout(() => { setRequestSent(false); setShowRequest(false); }, 3000);
+    } catch (err) {
+      console.error(err);
+      alert(L("Erreur lors de l'envoi. Veuillez réessayer.","حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى."));
+    }
   };
 
   return (
@@ -140,6 +169,14 @@ function ArtisansContent() {
                   <input
                     required type="tel" value={requestForm.phone}
                     onChange={(e) => setRequestForm({ ...requestForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-emerald-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">{ L("Email","البريد الإلكتروني") }</label>
+                  <input
+                    required type="email" value={requestForm.email}
+                    onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-emerald-200"
                   />
                 </div>

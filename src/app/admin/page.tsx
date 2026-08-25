@@ -12,6 +12,7 @@ import { useBusinessClaimStore } from "@/hooks/useBusinessClaimStore";
 import { useArtisanStore } from "@/hooks/useArtisanStore";
 import { useAdStore } from "@/hooks/useAdStore";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useContactMessageStore } from "@/hooks/useContactMessageStore";
 import { JobForm } from "@/components/JobForm";
 import { BusinessForm } from "@/components/BusinessForm";
 import { ArtisanForm } from "@/components/ArtisanForm";
@@ -22,11 +23,12 @@ import { Job, Business, ArtisanRequest, BusinessClaim, ArtisanProfile, Ad } from
 import { categoryEmojis } from "@/lib/categoryEmojis";
 import {
   Store, Users, Briefcase, Megaphone, Upload, Download, BarChart3, Settings,
-  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search
+  CheckCircle, XCircle, Eye, Plus, Trash2, Shield, UserX, AlertTriangle, Pencil, Send, Clock, Search,
+  MessageCircle, Mail, MailOpen
 } from "lucide-react";
 import clsx from "clsx";
 
-type AdminTab = "overview" | "users" | "businesses" | "artisans" | "jobs" | "artisanRequests" | "claims" | "ads" | "settings";
+type AdminTab = "overview" | "users" | "businesses" | "artisans" | "jobs" | "artisanRequests" | "claims" | "messages" | "ads" | "settings";
 
 export default function AdminPage() {
   const { t, isArabic, L, lang } = useLang();
@@ -38,6 +40,7 @@ export default function AdminPage() {
   const { claims, updateClaim, deleteClaim } = useBusinessClaimStore();
   const { allAds, addAd, updateAd, deleteAd } = useAdStore();
   const { settings, updateSettings } = useAppSettings();
+  const { messages, unreadCount, markRead, deleteMessage } = useContactMessageStore();
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("overview");
   const [deletedItems, setDeletedItems] = useState<Set<string>>(new Set());
@@ -102,7 +105,7 @@ export default function AdminPage() {
   const activeJobs = allJobs;
   const activeAds = allAds;
 
-  const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
+  const tabs: { key: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: "overview", label: L("Vue d'ensemble","نظرة عامة"), icon: <BarChart3 size={18} /> },
     { key: "users", label: L("Utilisateurs","المستخدمون"), icon: <Users size={18} /> },
     { key: "businesses", label: t.manageBusinesses, icon: <Store size={18} /> },
@@ -110,6 +113,7 @@ export default function AdminPage() {
     { key: "jobs", label: t.manageJobs, icon: <Briefcase size={18} /> },
     { key: "artisanRequests", label: L("Demandes artisans","طلبات الحرفيين"), icon: <Send size={18} /> },
     { key: "claims", label: L("Réclamations","المطالبات"), icon: <CheckCircle size={18} /> },
+    { key: "messages", label: L("Messages","الرسائل"), icon: <Mail size={18} />, badge: unreadCount },
     { key: "ads", label: t.manageAds, icon: <Megaphone size={18} /> },
     { key: "settings", label: L("Paramètres","الإعدادات"), icon: <Settings size={18} /> },
   ];
@@ -147,7 +151,13 @@ export default function AdminPage() {
                 )}
               >
                 {tabItem.icon}
-                {tabItem.label}
+                <span className="flex-1 text-left">{tabItem.label}</span>
+                {!!tabItem.badge && tabItem.badge > 0 && (
+                  <span className="relative flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold">
+                    {tabItem.badge}
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -476,6 +486,19 @@ export default function AdminPage() {
                            (L("Annulé","ملغي"))}
                         </span>
                         <div className="flex gap-1">
+                          <a
+                            href={`https://wa.me/${req.userPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                              isArabic
+                                ? `مرحباً ${req.userName}، بخصوص طلبك لحرفي (${t.specialties[req.specialty]}) على Espace Marrakech`
+                                : `Bonjour ${req.userName}, concernant votre demande d'artisan (${t.specialties[req.specialty]}) sur Espace Marrakech`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={L("Contacter via WhatsApp","التواصل عبر الواتساب")}
+                            className="p-1 rounded text-green-600 hover:bg-green-50"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
                           <select
                             value={req.status}
                             onChange={(e) => updateRequest({ ...req, status: e.target.value as ArtisanRequest["status"] })}
@@ -600,6 +623,88 @@ export default function AdminPage() {
                 {claims.length === 0 && (
                   <div className="p-8 text-center text-navy-400">
                     { L("Aucune réclamation","لا توجد مطالبات") }
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          {tab === "messages" && (
+            <div className="bg-white rounded-2xl border border-emerald-100 card-shadow overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-emerald-100">
+                <h2 className="font-bold text-navy-800 flex items-center gap-2">
+                  { L("Messages","الرسائل") } ({messages.length})
+                  {unreadCount > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      {unreadCount} { L("non lus","غير مقروءة") }
+                    </span>
+                  )}
+                </h2>
+              </div>
+              <div className="divide-y divide-emerald-100">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={clsx("p-4 hover:bg-primary-50", msg.status === "unread" && "bg-blue-50/50 border-l-4 border-primary-500")}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {msg.status === "unread" && (
+                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                          )}
+                          <span className={clsx("text-sm text-navy-800", msg.status === "unread" ? "font-bold" : "font-medium")}>
+                            {msg.name}
+                          </span>
+                          <a href={`mailto:${msg.email}`} className="text-xs text-primary-600 hover:text-primary-700">
+                            {msg.email}
+                          </a>
+                        </div>
+                        <p className="text-xs text-navy-400 mb-1">
+                          {t[msg.category as keyof typeof t] as string || msg.category}
+                        </p>
+                        <p className={clsx("text-sm mb-1", msg.status === "unread" ? "font-semibold text-navy-700" : "text-navy-600")}>
+                          {msg.subject}
+                        </p>
+                        <p className="text-sm text-navy-500 whitespace-pre-line">{msg.message}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span className={clsx(
+                          "text-xs font-medium px-2 py-1 rounded-lg",
+                          msg.status === "unread" ? "bg-yellow-50 text-yellow-700" : "bg-green-50 text-green-700"
+                        )}>
+                          {msg.status === "unread" ? (L("Non lu","غير مقروء")) : (L("Lu","مقروء"))}
+                        </span>
+                        <div className="flex gap-1">
+                          {msg.status === "unread" && (
+                            <button
+                              onClick={() => markRead(msg.id)}
+                              title={L("Marquer comme lu","تعليم كمقروء")}
+                              className="p-1 rounded text-blue-500 hover:bg-blue-50"
+                            >
+                              <MailOpen size={14} />
+                            </button>
+                          )}
+                          {confirmDelete === msg.id ? (
+                            <div className="flex gap-1">
+                              <button onClick={() => { deleteMessage(msg.id); setConfirmDelete(null); }} className="px-2 py-1 rounded text-xs bg-red-500 text-white">{t.yes}</button>
+                              <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 rounded text-xs bg-navy-50 text-navy-600">{t.no}</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmDelete(msg.id)} className="p-1 rounded text-navy-400 hover:text-red-600 hover:bg-red-50">
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-navy-300 mt-2">
+                      {new Date(msg.createdAt).toLocaleDateString("fr-FR")} {new Date(msg.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div className="p-8 text-center text-navy-400">
+                    { L("Aucun message","لا توجد رسائل") }
                   </div>
                 )}
               </div>

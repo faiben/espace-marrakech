@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useLang } from "@/contexts/LanguageContext";
-import { useArtisanRequestStore } from "@/hooks/useArtisanRequestStore";
+import { supabase } from "@/lib/supabase";
 import { useArtisanStore } from "@/hooks/useArtisanStore";
 import { useRatingStore } from "@/hooks/useRatingStore";
 import { useAppSettings } from "@/hooks/useAppSettings";
@@ -18,7 +18,6 @@ function ArtisanDetailContent() {
   const { t, isArabic, L, lang } = useLang();
   const { allArtisans } = useArtisanStore();
   const artisan = allArtisans.find((a) => a.id === searchParams.get("id"));
-  const { addRequest } = useArtisanRequestStore();
   const { settings } = useAppSettings();
   const { addRating, getArtisanRatings, getArtisanAverage, hasUserRatedArtisan } = useRatingStore();
   const [formOpen, setFormOpen] = useState(false);
@@ -210,7 +209,31 @@ function ArtisanDetailContent() {
       {formOpen && (
         <ArtisanRequestForm
           artisan={artisan}
-          onSave={(req) => { addRequest(req); setFormOpen(false); }}
+          onSave={async (req) => {
+            try {
+              const { error } = await supabase.from("artisan_requests").insert({
+                id: req.id,
+                artisan_id: req.artisanId,
+                artisan_name: req.artisanName,
+                user_name: req.userName,
+                user_phone: req.userPhone,
+                user_email: req.userEmail,
+                description_fr: req.descriptionFr,
+                description_ar: req.descriptionAr,
+                specialty: req.specialty,
+                area_id: req.areaId ?? null,
+                status: req.status,
+                contacted_artisans: req.contactedArtisans,
+                notes: req.notes ?? null,
+                created_at: req.createdAt,
+              });
+              if (error) throw new Error(error.message);
+              setFormOpen(false);
+            } catch (err) {
+              console.error(err);
+              alert(L("Erreur lors de l'envoi. Veuillez réessayer.","حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى."));
+            }
+          }}
           onClose={() => setFormOpen(false)}
         />
       )}

@@ -33,8 +33,11 @@ export function useArtisanRequestStore() {
   }, []);
 
   const addRequest = useCallback(async (req: ArtisanRequest) => {
+    const { error } = await supabase
+      .from("artisan_requests")
+      .upsert(toSnake(req as unknown as Record<string, unknown>));
+    if (error) throw new Error(error.message);
     setRequests((prev) => [req, ...prev]);
-    await supabase.from("artisan_requests").upsert(toSnake(req as unknown as Record<string, unknown>));
   }, []);
 
   const updateRequest = useCallback(async (updated: ArtisanRequest) => {

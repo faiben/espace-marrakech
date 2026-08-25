@@ -218,6 +218,7 @@ export interface ContactMessage {
   category: string;
   subject: string;
   message: string;
+  status: "unread" | "read";
   createdAt: string;
 }
 
