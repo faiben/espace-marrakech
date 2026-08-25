@@ -25,6 +25,7 @@ create table if not exists businesses (
   review_count integer default 0,
   is_sponsored boolean default false,
   package_type text default 'free',
+  payment_method text default '',
   created_at text default '',
   user_id text default ''
 );
@@ -86,6 +87,7 @@ create table if not exists ads (
   advertiser_email text default '',
   status text default 'pending',
   position text default 'banner',
+  payment_method text default '',
   starts_at text default '',
   expires_at text default '',
   impressions integer default 0,
